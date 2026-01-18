@@ -44,7 +44,13 @@ connectToDB();
 app.get("/jobs", async (req, res) => {
   try {
     const { jobCollection } = await connectToDB();
-    const result = await jobCollection.find({}).toArray();
+    const email = req.query.email;
+    const query = {};
+    if (email) {
+      query.hr_email = email;
+    }
+
+    const result = await jobCollection.find(query).toArray();
     res.send(result);
   } catch (err) {
     console.log(err);
@@ -61,6 +67,33 @@ app.get("/jobs/:id", async (req, res) => {
     res.send(result);
   } catch (err) {
     res.status(500).send("server error");
+  }
+});
+
+// // my jobs
+// app.get("/myJobs", async (req, res) => {
+//   try {
+//     const { jobCollection } = await connectToDB();
+//     const email = req.query.email;
+//     if (!email) {
+//       return res.status(400).send({ message: "Email is required" });
+//     }
+//     const query = { hr_email: email };
+//     const result = await jobCollection.find(query).toArray();
+//     res.send(result);
+//   } catch (err) {
+//     res.status(500).send("server error");
+//   }
+// });
+
+app.post("/jobs", async (req, res) => {
+  try {
+    const { jobCollection } = await connectToDB();
+    const newJob = req.body;
+    const result = await jobCollection.insertOne(newJob);
+    res.send(result);
+  } catch (error) {
+    res.status(500).send("job post server site error");
   }
 });
 
