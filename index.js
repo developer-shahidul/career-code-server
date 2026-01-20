@@ -57,7 +57,33 @@ app.get("/jobs", async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+app.get("/jobs/applications", async (req, res) => {
+  try {
+    const { applicationCollection, jobCollection } = await connectToDB();
 
+    const email = req.query.email;
+
+    if (!email) {
+      return res.status(400).send({ message: "email is required" });
+    }
+
+    const query = { hr_email: email };
+    const result = await jobCollection.find(query).toArray();
+
+    for (const job of result) {
+      const applicationQuery = { jobId: job._id.toString() };
+      const application_count =
+        await applicationCollection.countDocuments(applicationQuery);
+
+      job.application_count = application_count;
+    }
+
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "server side error" });
+  }
+});
 app.get("/jobs/:id", async (req, res) => {
   try {
     const { jobCollection } = await connectToDB();
@@ -106,6 +132,35 @@ app.post("/applications", async (req, res) => {
     res.send(result);
   } catch (error) {
     res.status(500).send("Application server error");
+  }
+});
+
+app.get("/applications/job/:job_id", async (req, res) => {
+  try {
+    const { applicationCollection } = await connectToDB();
+    const job_id = req.params.job_id;
+    const query = { jobId: job_id };
+    const result = await applicationCollection.find(query).toArray();
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "application server side error" });
+  }
+});
+
+app.patch("/applications/:id", async (req, res) => {
+  try {
+    const { applicationCollection } = await connectToDB();
+
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $set: { status: req.body.status },
+    };
+
+    const result = await applicationCollection.updateOne(query, updateDoc);
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: "update failed" });
   }
 });
 
