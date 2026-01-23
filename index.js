@@ -3,10 +3,17 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 3000;
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -19,6 +26,9 @@ let client;
 let jobCollection;
 let applicationCollection;
 async function connectToDB() {
+  if (jobCollection && applicationCollection) {
+    return { jobCollection, applicationCollection };
+  }
   try {
     // Create a MongoClient with a MongoClientOptions object to set the Stable API version
     client = new MongoClient(uri, {
@@ -40,6 +50,20 @@ async function connectToDB() {
   }
 }
 connectToDB();
+// jwt token related api
+app.post("/jwt", async (req, res) => {
+  const userData = req.body;
+  const token = jwt.sign(userData, process.env.JWT_ACCESS_SECRET, {
+    expiresIn: "1d",
+  });
+  // set token in the cookies
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: false,
+    sameSite: "lax",
+  });
+  res.send({ success: true });
+});
 
 app.get("/jobs", async (req, res) => {
   try {
@@ -178,7 +202,7 @@ app.get("/applications", async (req, res) => {
 app.get("/applications/applicant", async (req, res) => {
   try {
     const { applicationCollection, jobCollection } = await connectToDB();
-
+    console.log("inside application", req.cookies);
     const email = req.query.email;
     if (!email) {
       return res.status(400).json({ message: "email দাও" });
