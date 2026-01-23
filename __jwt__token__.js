@@ -25,6 +25,8 @@
           .post("http://localhost:3000/jwt", userData, {
             withCredentials: true,
           })
+     or for fetch add oftion credentials:"include"
+
  * 5. in the cors setting set credentials and origin
            // middleware
        app.use(
@@ -42,6 +44,14 @@
              sameSite: "lax",
            });
  *
- *
- *
+ * 7. one time :use cookieParser as middleware
+ * 8. for every api you want to varify token :in the client site : if using axios 
+ *    withCredentials:true for fetch:credentials include
+ * 
+ *   varify token
+ *  8. Check token exists. if not , return 401 --> unauthorized
+ *  9. jwt.varify function. if error return 401 --> unauthorized
+ *  10. if token is valid set the decoded value to the req object
+ *  11. if data asking for doesn't match with the owner or bearer of the token
+ *      --> 403 --> forbidden access
  */

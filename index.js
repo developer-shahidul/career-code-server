@@ -15,6 +15,30 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use(cookieParser());
+
+const logger = (req, res, next) => {
+  console.log("inside the logger middleware");
+  next();
+};
+
+const varifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  console.log("cookie in the middleware", token);
+
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+
+  // verifyToken
+  jwt.verify(token, process.env.JWT_ACCESS_SECRET, (err, decoded) => {
+    if (err) {
+      return (res.status(401), send({ message: "unauthorized access" }));
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
 
 app.get("/", (req, res) => {
   res.send("server is runnig");
@@ -199,15 +223,19 @@ app.get("/applications", async (req, res) => {
   }
 });
 
-app.get("/applications/applicant", async (req, res) => {
+app.get("/applications/applicant", logger, varifyToken, async (req, res) => {
   try {
     const { applicationCollection, jobCollection } = await connectToDB();
-    console.log("inside application", req.cookies);
     const email = req.query.email;
     if (!email) {
       return res.status(400).json({ message: "email দাও" });
     }
     const query = { applicant: email };
+
+    // console.log("inside application Api", req.cookies);
+    if (email !== req.decoded.email) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
 
     // 1️⃣ আগে application গুলো আনো
     const result = await applicationCollection.find(query).toArray();
