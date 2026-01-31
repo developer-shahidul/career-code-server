@@ -14,17 +14,28 @@ app.use(
     credentials: true,
   }),
 );
+
 app.use(express.json());
 app.use(cookieParser());
 
+// firebase jwt
+
+var admin = require("firebase-admin");
+
+var serviceAccount = require("./firebase-admin-key.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
 const logger = (req, res, next) => {
-  console.log("inside the logger middleware");
+  // console.log("inside the logger middleware");
   next();
 };
 
-const varifyToken = (req, res, next) => {
+const verifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
-  console.log("cookie in the middleware", token);
+  // console.log("cookie in the middleware", token);
 
   if (!token) {
     return res.status(401).send({ message: "unauthorized access" });
@@ -38,6 +49,20 @@ const varifyToken = (req, res, next) => {
     req.decoded = decoded;
     next();
   });
+};
+
+//firebase token verify
+const firebaseTokenVerify = async (req, res, next) => {
+  const authHeader = req.headers?.authorization;
+  const token = authHeader?.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ message: "unauthorize access" });
+  }
+  const userInfo = await admin.auth().verifyIdToken(token);
+
+  req.tokenEmail = userInfo.email;
+  console.log("firebase token", userInfo);
+  next();
 };
 
 app.get("/", (req, res) => {
@@ -223,45 +248,55 @@ app.get("/applications", async (req, res) => {
   }
 });
 
-app.get("/applications/applicant", logger, varifyToken, async (req, res) => {
-  try {
-    const { applicationCollection, jobCollection } = await connectToDB();
-    const email = req.query.email;
-    if (!email) {
-      return res.status(400).json({ message: "email দাও" });
-    }
-    const query = { applicant: email };
+app.get(
+  "/applications/applicant",
+  logger,
+  verifyToken,
+  firebaseTokenVerify,
+  async (req, res) => {
+    try {
+      const { applicationCollection, jobCollection } = await connectToDB();
+      const email = req.query.email;
+      if (!email) {
+        return res.status(400).json({ message: "email দাও" });
+      }
+      const query = { applicant: email };
 
-    // console.log("inside application Api", req.cookies);
-    if (email !== req.decoded.email) {
-      return res.status(403).send({ message: "forbidden access" });
-    }
+      // console.log("inside application Api", req.cookies);
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      // firebase
+      if (req.tokenEmail !== email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
 
-    // 1️⃣ আগে application গুলো আনো
-    const result = await applicationCollection.find(query).toArray();
+      // 1️⃣ আগে application গুলো আনো
+      const result = await applicationCollection.find(query).toArray();
 
-    // 2️⃣ loop দিয়ে job data যোগ করো (bad way but works)
-    for (const application of result) {
-      if (application.jobId) {
-        const jobQuery = { _id: new ObjectId(application.jobId) };
-        const job = await jobCollection.findOne(jobQuery);
+      // 2️⃣ loop দিয়ে job data যোগ করো (bad way but works)
+      for (const application of result) {
+        if (application.jobId) {
+          const jobQuery = { _id: new ObjectId(application.jobId) };
+          const job = await jobCollection.findOne(jobQuery);
 
-        if (job) {
-          application.company = job.company;
-          application.title = job.title;
-          application.company_logo = job.company_logo;
-          application.location = job.location;
-          application.description = job.description;
+          if (job) {
+            application.company = job.company;
+            application.title = job.title;
+            application.company_logo = job.company_logo;
+            application.location = job.location;
+            application.description = job.description;
+          }
         }
       }
-    }
 
-    res.send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Application server error");
-  }
-});
+      res.send(result);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Application server error");
+    }
+  },
+);
 
 app.listen(port, () => {
   console.log(`server is running port : ${port}`);
