@@ -54,14 +54,33 @@ const verifyToken = (req, res, next) => {
 //firebase token verify
 const firebaseTokenVerify = async (req, res, next) => {
   const authHeader = req.headers?.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({ message: "unauthorize" });
+  }
+
   const token = authHeader?.split(" ")[1];
+
   if (!token) {
     return res.status(401).send({ message: "unauthorize access" });
   }
-  const userInfo = await admin.auth().verifyIdToken(token);
 
-  req.tokenEmail = userInfo.email;
-  console.log("firebase token", userInfo);
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    console.log("firebase token decoded", decoded);
+
+    req.decoded = decoded;
+    next();
+  } catch (err) {
+    res.status(401).send({ message: "unauthorize access" });
+  }
+};
+
+// verify token email check
+const verifyEmailToken = (req, res, next) => {
+  if (req.query.email !== req.decoded.email) {
+    res.status(403).send({ message: "forbidden access" });
+  }
   next();
 };
 
@@ -130,33 +149,38 @@ app.get("/jobs", async (req, res) => {
     res.status(500).send("Server error");
   }
 });
-app.get("/jobs/applications", async (req, res) => {
-  try {
-    const { applicationCollection, jobCollection } = await connectToDB();
+app.get(
+  "/jobs/applications",
+  firebaseTokenVerify,
+  verifyEmailToken,
+  async (req, res) => {
+    try {
+      const { applicationCollection, jobCollection } = await connectToDB();
 
-    const email = req.query.email;
+      const email = req.query.email;
 
-    if (!email) {
-      return res.status(400).send({ message: "email is required" });
+      if (!email) {
+        return res.status(400).send({ message: "email is required" });
+      }
+
+      const query = { hr_email: email };
+      const result = await jobCollection.find(query).toArray();
+
+      for (const job of result) {
+        const applicationQuery = { jobId: job._id.toString() };
+        const application_count =
+          await applicationCollection.countDocuments(applicationQuery);
+
+        job.application_count = application_count;
+      }
+
+      res.send(result);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({ message: "server side error" });
     }
-
-    const query = { hr_email: email };
-    const result = await jobCollection.find(query).toArray();
-
-    for (const job of result) {
-      const applicationQuery = { jobId: job._id.toString() };
-      const application_count =
-        await applicationCollection.countDocuments(applicationQuery);
-
-      job.application_count = application_count;
-    }
-
-    res.send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ message: "server side error" });
-  }
-});
+  },
+);
 app.get("/jobs/:id", async (req, res) => {
   try {
     const { jobCollection } = await connectToDB();
@@ -208,6 +232,17 @@ app.post("/applications", async (req, res) => {
   }
 });
 
+app.get("/applications", async (req, res) => {
+  try {
+    const { applicationCollection } = await connectToDB();
+    const query = applicationCollection.find({});
+    const result = await query.toArray();
+    res.send(result);
+  } catch (error) {
+    res.status(500).send("Application server error");
+  }
+});
+
 app.get("/applications/job/:job_id", async (req, res) => {
   try {
     const { applicationCollection } = await connectToDB();
@@ -237,21 +272,11 @@ app.patch("/applications/:id", async (req, res) => {
   }
 });
 
-app.get("/applications", async (req, res) => {
-  try {
-    const { applicationCollection } = await connectToDB();
-    const query = applicationCollection.find({});
-    const result = await query.toArray();
-    res.send(result);
-  } catch (error) {
-    res.status(500).send("Application server error");
-  }
-});
-
 app.get(
   "/applications/applicant",
   logger,
   verifyToken,
+  verifyEmailToken,
   firebaseTokenVerify,
   async (req, res) => {
     try {
@@ -262,14 +287,7 @@ app.get(
       }
       const query = { applicant: email };
 
-      // console.log("inside application Api", req.cookies);
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-      // firebase
-      if (req.tokenEmail !== email) {
-        return res.status(403).send({ message: "forbidden access" });
-      }
+      // console.log("inside application Api", req.cookies)
 
       // 1️⃣ আগে application গুলো আনো
       const result = await applicationCollection.find(query).toArray();
