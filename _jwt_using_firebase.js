@@ -8,7 +8,7 @@
     }
     })
 
- *
+ * 3. set a middleware to varify the token
  *
  *
  *

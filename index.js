@@ -67,7 +67,7 @@ const firebaseTokenVerify = async (req, res, next) => {
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    console.log("firebase token decoded", decoded);
+    // console.log("firebase token decoded", decoded);
 
     req.decoded = decoded;
     next();
@@ -319,3 +319,4 @@ app.get(
 app.listen(port, () => {
   console.log(`server is running port : ${port}`);
 });
+module.exports = app;
