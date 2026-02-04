@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const port = process.env.PORT || 3000;
+// const port = process.env.PORT || 3000;
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -84,10 +84,7 @@ const verifyEmailToken = (req, res, next) => {
   next();
 };
 
-app.get("/", (req, res) => {
-  res.send("server is runnig");
-});
-
+// mongodb
 const uri = `mongodb+srv://${process.env.USER_ID}:${process.env.USER_PASS}@cluster0.39yqdr4.mongodb.net/?appName=Cluster0`;
 
 let client;
@@ -118,6 +115,7 @@ async function connectToDB() {
   }
 }
 connectToDB();
+
 // jwt token related api
 app.post("/jwt", async (req, res) => {
   const userData = req.body;
@@ -131,6 +129,10 @@ app.post("/jwt", async (req, res) => {
     sameSite: "lax",
   });
   res.send({ success: true });
+});
+
+app.get("/", (req, res) => {
+  res.send("server is runnig");
 });
 
 app.get("/jobs", async (req, res) => {
@@ -316,7 +318,4 @@ app.get(
   },
 );
 
-app.listen(port, () => {
-  console.log(`server is running port : ${port}`);
-});
 module.exports = app;
