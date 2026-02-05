@@ -19,15 +19,40 @@ app.use(express.json());
 app.use(cookieParser());
 
 // firebase jwt
+// firebase jwt
+const admin = require("firebase-admin");
 
-var admin = require("firebase-admin");
+let serviceAccount;
 
-var serviceAccount = require("./firebase-admin-key.json");
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  // Production (Vercel) এর জন্য
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    console.log("Firebase loaded from ENV variable successfully");
+  } catch (err) {
+    console.error("FIREBASE_SERVICE_ACCOUNT parse error:", err.message);
+  }
+} else {
+  // Local development এর জন্য (অপশনাল)
+  try {
+    serviceAccount = require("./firebase-admin-key.json");
+    console.log("Local firebase key loaded");
+  } catch (err) {
+    console.error("firebase-admin-key.json not found locally");
+  }
+}
+
+if (!serviceAccount) {
+  console.error(
+    "Firebase service account missing! Authentication will not work.",
+  );
+  // চাইলে এখানে process.exit(1) করতে পারো, কিন্তু প্রথমে চালিয়ে দেখার জন্য রাখো
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-
+///////////////////
 const logger = (req, res, next) => {
   // console.log("inside the logger middleware");
   next();
