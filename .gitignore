@@ -3,3 +3,5 @@ package-lock.json
 .env
 firebase-admin-key.json
 
+.vercel
+.env*.local

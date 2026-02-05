@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
-// const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -125,8 +125,8 @@ app.post("/jwt", async (req, res) => {
   // set token in the cookies
   res.cookie("token", token, {
     httpOnly: true,
-    secure: false,
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
   });
   res.send({ success: true });
 });
@@ -277,9 +277,9 @@ app.patch("/applications/:id", async (req, res) => {
 app.get(
   "/applications/applicant",
   logger,
+  firebaseTokenVerify,
   verifyToken,
   verifyEmailToken,
-  firebaseTokenVerify,
   async (req, res) => {
     try {
       const { applicationCollection, jobCollection } = await connectToDB();
@@ -317,5 +317,7 @@ app.get(
     }
   },
 );
-
+app.listen(port, () => {
+  console.log(`server port : ${port}`);
+});
 module.exports = app;
