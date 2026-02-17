@@ -166,7 +166,7 @@ app.get("/jobs", async (req, res) => {
 });
 app.get(
   "/jobs/applications",
-  firebaseTokenVerify,
+  // firebaseTokenVerify,
   // verifyEmailToken,
   async (req, res) => {
     try {
@@ -290,7 +290,7 @@ app.patch("/applications/:id", async (req, res) => {
 app.get(
   "/applications/applicant",
   // logger,
-  firebaseTokenVerify,
+  // firebaseTokenVerify,
   // verifyToken,
   // verifyEmailToken,
   async (req, res) => {
