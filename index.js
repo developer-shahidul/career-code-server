@@ -290,8 +290,8 @@ app.patch("/applications/:id", async (req, res) => {
 app.get(
   "/applications/applicant",
   // logger,
-  // firebaseTokenVerify,
-  verifyToken,
+  firebaseTokenVerify,
+  // verifyToken,
   verifyEmailToken,
   async (req, res) => {
     try {
