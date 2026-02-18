@@ -166,8 +166,8 @@ app.get("/jobs", async (req, res) => {
 });
 app.get(
   "/jobs/applications",
-  // firebaseTokenVerify,
-  // verifyEmailToken,
+  firebaseTokenVerify,
+  verifyEmailToken,
   async (req, res) => {
     try {
       const { applicationCollection, jobCollection } = await connectToDB();
@@ -291,8 +291,8 @@ app.get(
   "/applications/applicant",
   // logger,
   // firebaseTokenVerify,
-  // verifyToken,
-  // verifyEmailToken,
+  verifyToken,
+  verifyEmailToken,
   async (req, res) => {
     try {
       const { applicationCollection, jobCollection } = await connectToDB();
