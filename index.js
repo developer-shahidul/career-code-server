@@ -12,7 +12,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "http://career-code-client-f17gue5rr-shaidul-portfollio.vercel.app",
+      "https://career-code-client-f17gue5rr-shaidul-portfollio.vercel.app",
     ],
     credentials: true,
   }),
