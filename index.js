@@ -12,7 +12,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://career-code-client-f17gue5rr-shaidul-portfollio.vercel.app",
+      "https://career-code-client-pi.vercel.app",
     ],
     credentials: true,
   }),
@@ -27,6 +27,7 @@ const decoded = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
   "utf-8",
 );
 const serviceAccount = JSON.parse(decoded);
+
 // const serviceAccount = {
 //   type: process.env.FIREBASE_TYPE,
 //   project_id: process.env.FIREBASE_PROJECT_ID,
@@ -321,7 +322,6 @@ app.get(
             application.title = job.title;
             application.company_logo = job.company_logo;
             application.location = job.location;
-            application.description = job.description;
           }
         }
       }
